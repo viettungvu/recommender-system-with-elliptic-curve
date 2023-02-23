@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "RSUtils": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:1992;http://localhost:1993"
+    }
+  }
+}
