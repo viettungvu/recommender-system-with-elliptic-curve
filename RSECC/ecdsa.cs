@@ -14,7 +14,7 @@ namespace RSECC
             BigInteger numberMessage = Utils.BinaryAscii.numberFromHex(hashMessage);
             CurveFp curve = privateKey.curve;
             BigInteger randNum = Utils.Integer.randomBetween(BigInteger.One, curve.order - 1);
-            Point randSignPoint = EcdsaMath.multiply(curve.base_point, randNum, curve.order, curve.A, curve.P);
+            Point randSignPoint = EcdsaMath.multiply(curve.G, randNum, curve.order, curve.A, curve.P);
             BigInteger r = Utils.Integer.modulo(randSignPoint.x, curve.order);
             BigInteger s = Utils.Integer.modulo((numberMessage + r * privateKey.secret) * EcdsaMath.inv(randNum, curve.order), curve.order);
 
@@ -41,7 +41,7 @@ namespace RSECC
             BigInteger inv = EcdsaMath.inv(sigS, curve.order);
 
             Point u1 = EcdsaMath.multiply(
-                curve.base_point,
+                curve.G,
                 Utils.Integer.modulo(numberMessage * inv, curve.order),
                 curve.order,
                 curve.A,

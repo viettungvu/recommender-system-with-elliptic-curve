@@ -12,9 +12,9 @@ namespace RSECC
         public BigInteger secret { get; private set; }
 
 
-        public PrivateKey(CurveType curve, BigInteger? secret = null)
+        public PrivateKey(CurveType type, BigInteger? secret = null)
         {
-            this.curve = Curves.getCurveByType(curve);
+            this.curve = Curves.getCurveByType(type);
             if (secret == null)
             {
                 secret = Utils.Integer.randomBetween(1, this.curve.order - 1);
@@ -24,7 +24,7 @@ namespace RSECC
 
         public PublicKey publicKey()
         {
-            Point publicPoint = EcdsaMath.multiply(curve.base_point, secret, curve.order, curve.A, curve.P);
+            Point publicPoint = EcdsaMath.multiply(curve.G, secret, curve.order, curve.A, curve.P);
             return new PublicKey(publicPoint, curve);
         }
 

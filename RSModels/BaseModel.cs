@@ -10,6 +10,7 @@ namespace RSModels
         public string nguoi_tao { get; set; } = "vietungtvhd";
         public string nguoi_sua { get; set; } = "viettungtvhd";
         public long ngay_sua { get; set; } = 0;
-        public List<string> thuoc_tinh { get; set; }
+        public long ngay_tao { get; set; } = 0;
+        public List<int> thuoc_tinh { get; set; }
     }
 }

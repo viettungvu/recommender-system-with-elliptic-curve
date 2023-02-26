@@ -4,18 +4,21 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using RSECC;
 using RSES;
 using RSModels;
+using RSModels.Utils;
 
 namespace RSService
 {
     public static class LogUtil
     {
-
         private static Random _rd = new Random();
+        private static int _curve_property = (int)ThuocTinhHeThong.CURVE_TYPE_SEC160K1;
+        private static CurveFp _curve = Curves.getCurveByType(CurveType.sec160k1);
         public static void Run()
         {
             int so_user = 943;
@@ -84,54 +87,57 @@ namespace RSService
             BigInteger[,] ksuij = new BigInteger[so_user, nk];
             sw.Start();
             Point[,] KPUij = new Point[so_user, nk];
-
-            for (int i = 0; i < so_user; i++)
+            Parallel.For(0, so_user, i =>
             {
-                for (int j = 0; j < nk; j++)
+                Parallel.For(0, nk, j =>
                 {
                     PrivateKey private_key = new PrivateKey(CurveType.sec160k1);
                     ksuij[i, j] = private_key.secret;
                     PublicKey public_key = private_key.publicKey();
                     KPUij[i, j] = public_key.point;
-                }
-            }
+                });
+            });
             sw.Stop();
             LogInfo log_pharse_1 = new LogInfo()
             {
                 thoi_gian = sw.ElapsedMilliseconds,
-                pharse = Pharse.PHARSE_1,
+                pharse = Phase.PHASE_1,
                 so_phim = so_phim,
-                so_user = so_user
+                so_user = so_user,
+                type = TypeSolution.ELLIPTIC,
+                thuoc_tinh = new List<int> { _curve_property },
             };
-            bool success=LoggerRepository.Instance.Index(log_pharse_1);
+            log_pharse_1.SetMetadata();
+            bool success = LoggerRepository.Instance.Index(log_pharse_1);
             #endregion
-            CurveFp curve = Curves.getCurveByType(CurveType.sec160k1);
+            
             #region Pha 2 Máy chủ thực hiện
             sw.Start();
             Point[] KPj = new Point[nk];
-            for (int j = 0; j < nk; j++)
+            Parallel.For(0, nk, j =>
             {
                 KPj[j] = new Point(0, 0);
-                for (int i = 0; i < so_user; i++)
+                Parallel.For(0, so_user, i =>
                 {
-                    KPj[j] = EcdsaMath.add(KPj[j], KPUij[i, j], curve.A, curve.P);
-                }
-                //Gủi cho người dùng Ui:KPj
-            }
+                    KPj[j] = EcdsaMath.add(KPj[j], KPUij[i, j], _curve.A, _curve.P);
+                });
+            });
             sw.Stop();
             LogInfo log_pharse_2 = new LogInfo()
             {
                 thoi_gian = sw.ElapsedMilliseconds,
-                pharse = Pharse.PHARSE_2,
+                pharse = Phase.PHASE_2,
                 so_phim = so_phim,
-                so_user = so_user
+                so_user = so_user,
+                type = TypeSolution.ELLIPTIC,
+                thuoc_tinh = new List<int> { _curve_property },
             };
-            success=LoggerRepository.Instance.Index(log_pharse_2);
-            return;
+            log_pharse_2.SetMetadata();
+            success = LoggerRepository.Instance.Index(log_pharse_2);
             #endregion
 
             #region Pha 3
-            Point[,] AUij = new Point[10, 100];
+            Point[,] AUij = new Point[so_user, ns];
             for (int i = 0; i < so_user; i++)
             {
                 int j = 0;
@@ -139,21 +145,32 @@ namespace RSService
                 {
                     for (int k = t + 1; k < nk; k++)
                     {
-                        Point p1 = EcdsaMath.multiply(curve.base_point, 2, curve.order, curve.A, curve.P);
-                        Point p2 = EcdsaMath.multiply(KPj[t], ksuij[i, k], curve.order, curve.A, curve.P);
-                        Point p3 = EcdsaMath.multiply(KPj[k], ksuij[i, t], curve.order, curve.A, curve.P);
-                        //AUij[i, j]= EcdsaMath.add(p1,p2, curve.A, curve.P)-p3;
+                        Point p1 = EcdsaMath.multiply(_curve.G, 2, _curve.order, _curve.A, _curve.P);
+                        Point p2 = EcdsaMath.multiply(KPj[t], ksuij[i, k], _curve.order, _curve.A, _curve.P);
+                        Point p3 = EcdsaMath.multiply(KPj[k], ksuij[i, t], _curve.order, _curve.A, _curve.P);
+                        BigInteger tmp = BigInteger.Remainder(-p3.y, _curve.P);
+                        if (tmp < 0)
+                        {
+                            tmp += _curve.P;
+                        }
+                        Point invp3 = new Point(p3.x, tmp);
+                        AUij[i, j] = EcdsaMath.add(EcdsaMath.add(p1, p2, _curve.A, _curve.P), invp3, _curve.A, _curve.P);
+                        if (j == ns - 1) break;
+                        else j++;
                     }
                 }
             }
             LogInfo log_pharse_3 = new LogInfo()
             {
                 thoi_gian = sw.ElapsedMilliseconds,
-                pharse = Pharse.PHARSE_3,
+                pharse = Phase.PHASE_3,
                 so_phim = so_phim,
-                so_user = so_user
+                so_user = so_user,
+                type = TypeSolution.ELLIPTIC,
+                thuoc_tinh = new List<int> { _curve_property },
             };
-            LoggerRepository.Instance.Index(log_pharse_3);
+            success = LoggerRepository.Instance.Index(log_pharse_3);
+            return;
             #endregion
 
 
@@ -190,7 +207,7 @@ namespace RSService
             //LogInfo log_pharse_4 = new LogInfo()
             //{
             //    thoi_gian = sw.ElapsedMilliseconds,
-            //    pharse = Pharse.PHARSE_4,
+            //    pharse = Phase.PHARSE_4,
             //    so_phim = so_phim,
             //    so_user = so_user
             //};

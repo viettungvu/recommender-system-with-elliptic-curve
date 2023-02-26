@@ -14,18 +14,18 @@ namespace RSECC
         public BigInteger order { get; private set; }
 
         //Điếm sinh G
-        public Point base_point { get; private set; }
+        public Point G { get; private set; }
         //Loại đường cong
         public CurveType type { get; set; }
         public int[] oid { get; private set; }
 
-        public CurveFp(BigInteger A, BigInteger B, BigInteger P, BigInteger order, BigInteger x_base_point, BigInteger y_base_point, CurveType type, int[] oid)
+        public CurveFp(BigInteger A, BigInteger B, BigInteger P, BigInteger order, BigInteger Gx, BigInteger Gy, CurveType type, int[] oid)
         {
             this.A = A;
             this.B = B;
             this.P = P;
             this.order = order;
-            this.base_point = new Point(x_base_point, y_base_point);
+            this.G = new Point(Gx, Gy);
             this.type = type;
             this.oid = oid;
         }
