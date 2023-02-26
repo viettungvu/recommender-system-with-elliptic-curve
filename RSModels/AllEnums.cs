@@ -8,7 +8,7 @@ namespace RSModels
     {
 
     }
-    public enum Phase
+    public enum ECCPhase
     {
         ALL = 0,
         PHASE_1 = 1,
