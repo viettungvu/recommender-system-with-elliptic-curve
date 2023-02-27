@@ -12,7 +12,7 @@ namespace RSECC
         public BigInteger secret { get; private set; }
 
 
-        public PrivateKey(CurveType type, BigInteger? secret = null)
+        public PrivateKey(CurveType type=CurveType.sec160k1, BigInteger? secret = null)
         {
             this.curve = Curves.getCurveByType(type);
             if (secret == null)

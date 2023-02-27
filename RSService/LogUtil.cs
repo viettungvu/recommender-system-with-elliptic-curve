@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Nest;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
 using RSECC;
 using RSES;
@@ -23,11 +24,11 @@ namespace RSService
         public static event EventHandler<LogEventArgs> UpdateState;
         private static string _data_folder = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName, "data");
 
-        private static readonly string _file_phase_1 = "Pha1.txt";
-        private static readonly string _file_phase_1_1 = "Pha1_1.txt";
-        private static readonly string _file_phase_2 = "Pha2.txt";
-        private static readonly string _file_phase_3 = "Pha3.txt";
-        private static readonly string _file_phase_4 = "Pha4.txt";
+        private static readonly string _file_private_key = "PrivateKey.txt";
+        private static readonly string _file_public_key = "PublicKey.txt";
+        private static readonly string _file_share_key = "Share_Key.txt";
+        private static readonly string _file_c_to_server = "CipherTextSendToServer.txt";
+        private static readonly string _file_c_to_client = "CipherTextSendToClient.txt";
         public static void Run()
         {
             try
@@ -100,17 +101,16 @@ namespace RSService
                 StringBuilder sb = new StringBuilder();
                 StringBuilder sb1 = new StringBuilder();
 
-
                 #region Pha 1
                 UpdateState?.Invoke(null, new LogEventArgs { message = "Phase 1 started" });
                 BigInteger[,] ksuij = new BigInteger[so_user, nk];
                 Point[,] KPUij = new Point[so_user, nk];
                 //sw.Start();
-                Parallel.For(0, so_user, i =>
+                Parallel.For(0, so_user - 1, i =>
                 {
-                    Parallel.For(0, nk, j =>
+                    Parallel.For(0, nk - 1, j =>
                     {
-                        PrivateKey private_key = new PrivateKey(CurveType.sec160k1);
+                        PrivateKey private_key = new PrivateKey();
                         ksuij[i, j] = private_key.secret;
                         PublicKey public_key = private_key.publicKey();
                         KPUij[i, j] = public_key.point;
@@ -131,36 +131,41 @@ namespace RSService
                 //log_pharse_1.SetMetadata();
                 //success = LoggerRepository.Instance.Index(log_pharse_1);
 
-                WriteFile(_file_phase_1, sb.ToString());
-                WriteFile(_file_phase_1_1, sb1.ToString());
+
+                WriteFile(_file_private_key, sb.ToString());
+                WriteFile(_file_public_key, sb1.ToString());
                 sb.Clear();
                 sb1.Clear();
                 UpdateState?.Invoke(null, new LogEventArgs { message = string.Format("Phase 1 completed in {0} miliseconds.", sw.ElapsedMilliseconds) });
+                //return;
                 #endregion
 
                 #region Pha 2 Máy chủ thực hiện
                 UpdateState?.Invoke(null, new LogEventArgs { message = "Phase 2 started" });
 
-                //string[] lines_pha_1 = ReadFileAsLine(_file_phase_1_1);
-                //foreach (string line in lines_pha_1)
-                //{
-                //    string[] values = line.Split(',');
-                //    KPUij[int.Parse(values[0]), int.Parse(values[1])] = new Point(BigInteger.Parse(values[2]), BigInteger.Parse(values[3]));
-                //}
+                string[] data_pha1_1 = ReadFileAsLine(_file_public_key);
 
+                Parallel.ForEach(data_pha1_1, line =>
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        string[] values = line.Split(',');
+                        KPUij[int.Parse(values[0]), int.Parse(values[1])] = new Point(BigInteger.Parse(values[2]), BigInteger.Parse(values[3]));
+                    }
+                });
 
                 Point[] KPj = new Point[nk];
-                //sw.Start();
-                Parallel.For(0, nk, j =>
+                sw.Start();
+                Parallel.For(0, nk - 1, j =>
                 {
                     KPj[j] = new Point(0, 0);
-                    Parallel.For(0, so_user, i =>
+                    Parallel.For(0, so_user - 1, i =>
                     {
                         KPj[j] = EcdsaMath.add(KPj[j], KPUij[i, j], _curve.A, _curve.P);
                     });
                     sb.AppendLine(string.Format("{0},{1},{2}", j, KPj[j].x, KPj[j].y));
                 });
-                //sw.Stop();
+                sw.Stop();
                 //LogInfo log_pharse_2 = new LogInfo()
                 //{
                 //    thoi_gian = sw.ElapsedMilliseconds,
@@ -172,7 +177,7 @@ namespace RSService
                 //};
                 //log_pharse_2.SetMetadata();
                 //success = LoggerRepository.Instance.Index(log_pharse_2);
-                WriteFile(_file_phase_2, sb.ToString());
+                WriteFile(_file_share_key, sb.ToString());
                 sb.Clear();
 
                 UpdateState?.Invoke(null, new LogEventArgs { message = string.Format("Phase 2 completed in {0} miliseconds.", sw.ElapsedMilliseconds) });
@@ -180,47 +185,35 @@ namespace RSService
 
                 #region Pha 3
                 UpdateState?.Invoke(null, new LogEventArgs { message = "Phase 3 started" });
-                string[] data_pha2 = ReadFileAsLine(_file_phase_2);
-                foreach (string line in data_pha2)
+                string[] data_pha2 = ReadFileAsLine(_file_share_key);
+
+                Parallel.ForEach(data_pha2, line =>
                 {
-                    string[] values = line.Split(',');
-                    try
+                    if (!string.IsNullOrWhiteSpace(line))
                     {
+                        string[] values = line.Split(',');
                         KPj[int.Parse(values[0])] = new Point(BigInteger.Parse(values[1]), BigInteger.Parse(values[2]));
-
                     }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.StackTrace);
-                        break;
-                    }
-                }
+                });
 
-                string[] data_pha1_1 = ReadFileAsLine(_file_phase_1_1);
-                
-                foreach (string line in data_pha1_1)
+                string[] data_pha1 = ReadFileAsLine(_file_private_key);
+                Parallel.ForEach(data_pha1, line =>
                 {
-                    string[] values = line.Split(',');
-                    try
+                    if (!string.IsNullOrWhiteSpace(line))
                     {
+                        string[] values = line.Split(',');
                         ksuij[int.Parse(values[0]), int.Parse(values[1])] = BigInteger.Parse(values[2]);
-                        sb.AppendLine(line);
+                    }
+                });
 
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.StackTrace);
-                        WriteFile("error.txt", sb.ToString());
-                        break;
-                    }
-                }
                 Point[,] AUij = new Point[so_user, ns];
-                Parallel.For(0, so_user, i =>
+                sw.Start();
+                Parallel.For(0, so_user-1, i =>
                 {
                     int j = 0;
                     Parallel.For(0, nk - 1, t =>
                     {
-                        Parallel.For(t + 1, nk, (k, loopState) =>
+                        Parallel.For(t + 1, nk-1, (k, loopState) =>
                         {
                             Point p1 = EcdsaMath.multiply(_curve.G, 2, _curve.order, _curve.A, _curve.P);
                             Point p2 = EcdsaMath.multiply(KPj[t], ksuij[i, k], _curve.order, _curve.A, _curve.P);
@@ -236,20 +229,20 @@ namespace RSService
                             else j++;
                         });
                     });
-                    sb.AppendLine(string.Format("{0}, {1}, {2}, {3}", i, j, AUij[i, j].x, AUij[i, j].y));
+                    sb.AppendLine(string.Format("{0},{1},{2},{3}", i, j, AUij[i, j].x, AUij[i, j].y));
                 });
-
-                LogInfo log_pharse_3 = new LogInfo()
-                {
-                    thoi_gian = sw.ElapsedMilliseconds,
-                    pharse = ECCPhase.PHASE_3,
-                    so_phim = so_phim,
-                    so_user = so_user,
-                    type = TypeSolution.ELLIPTIC,
-                    thuoc_tinh = new List<int> { _curve_property },
-                };
-                success = LoggerRepository.Instance.Index(log_pharse_3);
-                WriteFile(_file_phase_3, sb.ToString());
+                sw.Stop();
+                //LogInfo log_pharse_3 = new LogInfo()
+                //{
+                //    thoi_gian = sw.ElapsedMilliseconds,
+                //    pharse = ECCPhase.PHASE_3,
+                //    so_phim = so_phim,
+                //    so_user = so_user,
+                //    type = TypeSolution.ELLIPTIC,
+                //    thuoc_tinh = new List<int> { _curve_property },
+                //};
+                //success = LoggerRepository.Instance.Index(log_pharse_3);
+                WriteFile(_file_c_to_server, sb.ToString());
                 sb.Clear();
                 UpdateState?.Invoke(null, new LogEventArgs { message = string.Format("Phase 3 completed in {0} miliseconds.", sw.ElapsedMilliseconds) });
                 #endregion
@@ -319,6 +312,16 @@ namespace RSService
                 return File.ReadAllLines(full_path);
             }
             return new string[] { };
+        }
+
+        private static string ReadFile(string file_name)
+        {
+            string full_path = Path.Combine(_data_folder, file_name);
+            if (File.Exists(full_path))
+            {
+                return File.ReadAllText(full_path);
+            }
+            return string.Empty;
         }
     }
 
