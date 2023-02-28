@@ -37,7 +37,7 @@ namespace RSService
         {
             try
             {
-                LogUtil.Run();
+                Elliptic.Run();
             }
             catch (Exception)
             {

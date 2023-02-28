@@ -24,7 +24,7 @@ namespace RSECC
 
         public PublicKey publicKey()
         {
-            Point publicPoint = EcdsaMath.multiply(curve.G, secret, curve.order, curve.A, curve.P);
+            Point publicPoint = EcdsaMath.Multiply(curve.G, secret, curve.order, curve.A, curve.P);
             return new PublicKey(publicPoint, curve);
         }
 

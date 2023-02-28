@@ -115,13 +115,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseRSService.cs" />
+    <Compile Include="ElGamma.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="LogUtil.cs" />
+    <Compile Include="Elliptic.cs" />
     <Compile Include="models\LogEventArgs.cs" />
     <Compile Include="svMain.cs">
       <SubType>Component</SubType>

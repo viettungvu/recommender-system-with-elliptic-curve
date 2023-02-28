@@ -8,7 +8,7 @@ namespace RSECC
     {
 
         #region Old
-        public static Point multiply(Point p, BigInteger n, BigInteger N, BigInteger A, BigInteger P)
+        public static Point Multiply(Point p, BigInteger n, BigInteger N, BigInteger A, BigInteger P)
         {
             //Fast way to multily point and scalar in elliptic curves
 
@@ -22,7 +22,7 @@ namespace RSECC
             return fromJacobian(jacobianMultiply(toJacobian(p), n, N, A, P), P);
         }
 
-        public static Point add(Point p, Point q, BigInteger A, BigInteger P)
+        public static Point Add(Point p, Point q, BigInteger A, BigInteger P)
         {
             //Fast way to add two points in elliptic curves
 
@@ -35,7 +35,7 @@ namespace RSECC
             return fromJacobian(jacobianAdd(toJacobian(p), toJacobian(q), A, P), P);
         }
 
-        public static BigInteger inv(BigInteger x, BigInteger n)
+        public static BigInteger Inv(BigInteger x, BigInteger n)
         {
             //Extended Euclidean Algorithm.It's the 'division' in elliptic curves
 
@@ -75,7 +75,7 @@ namespace RSECC
         {
             //Convert point to Jacobian coordinates
 
-            //: param p: First Point you want to add
+            //: param p: First Point you want to Add
             //:return: Point in Jacobian coordinates
 
             return new Point(p.x, p.y, 1);
@@ -85,11 +85,11 @@ namespace RSECC
         {
             //Convert point back from Jacobian coordinates
 
-            //:param p: First Point you want to add
+            //:param p: First Point you want to Add
             //:param P: Prime number in the module of the equation Y^2 = X ^ 3 + A * X + B(mod p)
             //:return: Point in default coordinates
 
-            BigInteger z = inv(p.z, P);
+            BigInteger z = Inv(p.z, P);
 
             return new Point(
                 Utils.Integer.modulo(p.x * BigInteger.Pow(z, 2), P),
@@ -126,8 +126,8 @@ namespace RSECC
         {
             // Add two points in elliptic curves
 
-            // :param p: First Point you want to add
-            // :param q: Second Point you want to add
+            // :param p: First Point you want to Add
+            // :param q: Second Point you want to Add
             // :param P: Prime number in the module of the equation Y^2 = X^3 + A*X + B (mod p)
             // :param A: Coefficient of the first-order term of the equation Y^2 = X^3 + A*X + B (mod p)
             // :return: Point that represents the sum of First and Second Point
@@ -233,7 +233,7 @@ namespace RSECC
             BigInteger q = 2 * P.x * pow(2 * P.y, 2) * num1 - 2 * pow(num1, 3) - pow(2 * P.y, 4);
             BigInteger U = 2 * P.y * q;
             BigInteger W = 3 * pow(pow(num1, 2) - 2 * P.x * pow(2 * P.y, 2), 2) + a * pow(2 * P.y, 4);
-            fourP.x = (pow(W, 2) - 2 * pow(q, 2) * pow(num1, 2) + 4 * P.x * pow(U, 2)) * inv(pow(U, 2), p);
+            fourP.x = (pow(W, 2) - 2 * pow(q, 2) * pow(num1, 2) + 4 * P.x * pow(U, 2)) * Inv(pow(U, 2), p);
             return fourP;
         }
         #endregion

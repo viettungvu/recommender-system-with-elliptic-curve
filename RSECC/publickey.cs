@@ -148,7 +148,7 @@ encodedEcAndOid,
             {
                 throw new ArgumentException("Point (" + p.x.ToString() + "," + p.y.ToString() + ") is not valid for curve " + curveObject.type);
             }
-            if (!EcdsaMath.multiply(p, curveObject.order, curveObject.order, curveObject.A, curveObject.P).isAtInfinity())
+            if (!EcdsaMath.Multiply(p, curveObject.order, curveObject.order, curveObject.A, curveObject.P).isAtInfinity())
             {
                 throw new ArgumentException("Point (" + p.x.ToString() + "," + p.y.ToString() + ") * " + curveObject.type + ".order is not at infinity");
             }

@@ -14,9 +14,9 @@ namespace RSECC
             BigInteger numberMessage = Utils.BinaryAscii.numberFromHex(hashMessage);
             CurveFp curve = privateKey.curve;
             BigInteger randNum = Utils.Integer.randomBetween(BigInteger.One, curve.order - 1);
-            Point randSignPoint = EcdsaMath.multiply(curve.G, randNum, curve.order, curve.A, curve.P);
+            Point randSignPoint = EcdsaMath.Multiply(curve.G, randNum, curve.order, curve.A, curve.P);
             BigInteger r = Utils.Integer.modulo(randSignPoint.x, curve.order);
-            BigInteger s = Utils.Integer.modulo((numberMessage + r * privateKey.secret) * EcdsaMath.inv(randNum, curve.order), curve.order);
+            BigInteger s = Utils.Integer.modulo((numberMessage + r * privateKey.secret) * EcdsaMath.Inv(randNum, curve.order), curve.order);
 
             return new Signature(r, s);
         }
@@ -38,23 +38,23 @@ namespace RSECC
                 return false;
             }
 
-            BigInteger inv = EcdsaMath.inv(sigS, curve.order);
+            BigInteger inv = EcdsaMath.Inv(sigS, curve.order);
 
-            Point u1 = EcdsaMath.multiply(
+            Point u1 = EcdsaMath.Multiply(
                 curve.G,
                 Utils.Integer.modulo(numberMessage * inv, curve.order),
                 curve.order,
                 curve.A,
                 curve.P
             );
-            Point u2 = EcdsaMath.multiply(
+            Point u2 = EcdsaMath.Multiply(
                 publicKey.point,
                 Utils.Integer.modulo(sigR * inv, curve.order),
                 curve.order,
                 curve.A,
                 curve.P
             );
-            Point v = EcdsaMath.add(
+            Point v = EcdsaMath.Add(
                 u1,
                 u2,
                 curve.A,

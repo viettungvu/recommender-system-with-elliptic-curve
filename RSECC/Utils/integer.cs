@@ -63,7 +63,7 @@ namespace RSECC.Utils
             if (randomValue <= range)
             {
                 /* We've been working with 0 as a starting point, so we need to
-                    * add the `minimum` here. */
+                    * Add the `minimum` here. */
                 return minimum + randomValue;
             }
 

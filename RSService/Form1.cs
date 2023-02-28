@@ -62,13 +62,14 @@ namespace RSService
                 //_worker.RunWorkerAsync();
                 _test_number -= 1;
             }
+            _worker.Dispose();
         }
 
         private void _worker_DoWork(object sender, DoWorkEventArgs e)
         {
             _worker.ReportProgress(0, "Bắt đầu xử lí");
-            LogUtil.UpdateState += UpdateStatus;
-            LogUtil.Run();
+            Elliptic.UpdateState += UpdateStatus;
+            Elliptic.Run();
             _worker.ReportProgress(0, "Xử lí xong");
         }
 
@@ -81,7 +82,7 @@ namespace RSService
         {
             if (can_run == true)
             {
-                LogUtil.Run();
+                Elliptic.Run();
             }
         }
 
