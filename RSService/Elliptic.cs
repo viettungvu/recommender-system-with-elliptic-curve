@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -16,6 +17,7 @@ using RSES;
 using RSModels;
 using RSModels.Utils;
 using RSService.models;
+using RSUtils;
 
 namespace RSService
 {
@@ -32,6 +34,11 @@ namespace RSService
         private static readonly string _file_share_key = "SharedKey.txt";
         private static readonly string _file_c_to_server = "CipherTextSendToServer.txt";
         private static readonly string _file_c_to_client = "CipherTextSendToClient.txt";
+
+        private static bool _run_phase_1 = false;
+        private static bool _run_phase_2 = false;
+        private static bool _run_phase_3 = true;
+        private static bool _run_phase_4 = true;
         public static void Run()
         {
             try
@@ -40,7 +47,6 @@ namespace RSService
                 UpdateState?.Invoke(null, new LogEventArgs { message = "Service starting..." });
                 int so_user = 943;
                 int so_phim = 200;
-                int max = 5;
                 Stopwatch sw = Stopwatch.StartNew();
 
                 int ns = so_phim * (so_phim + 5) / 2;
@@ -55,27 +61,12 @@ namespace RSService
                 }
 
                 string[] data = ReadFileAsLine("Data2.200.txt");
-                //List<RawData> data = new List<RawData>();
+
                 Parallel.ForEach(data, line =>
                 {
                     string[] values = line.Split(',');
                     Ri[int.Parse(values[0]) - 1, int.Parse(values[1]) - 1] = int.Parse(values[2]);
                 });
-                //foreach (string line in data)
-                //{
-                //    string[] values = line.Split(',');
-                //    Ri[int.Parse(values[0]) - 1, int.Parse(values[1]) - 1] = int.Parse(values[2]);
-                //    //data.Add(new RawData
-                //    //{
-                //    //    muc_tin_thu_j = int.Parse(values[1]) - 1,
-                //    //    nguoi_dung_thu_i = int.Parse(values[0]) - 1,
-                //    //    xep_hang = int.Parse(values[2]),
-                //    //});
-                //}
-
-                //bool success=RatingRepository.Instance.IndexMany(data);
-                //var dsach_raw_data = RatingRepository.Instance.GetAll();
-                //return;
                 int[,] Rns = new int[so_user, ns];
                 for (int i = 0; i < so_user; i++)
                 {
@@ -104,225 +95,244 @@ namespace RSService
                     }
                 }
 
+                ConcurrentBag<string> concurrent_1 = new ConcurrentBag<string>();
+                ConcurrentBag<string> concurrent_2 = new ConcurrentBag<string>();
 
-                StringBuilder sb = new StringBuilder();
-                StringBuilder sb1 = new StringBuilder();
-
-                #region Pha 1
-                UpdateState?.Invoke(null, new LogEventArgs { message = "Phase 1 started" });
                 BigInteger[,] ksuij = new BigInteger[so_user, nk];
                 Point[,] KPUij = new Point[so_user, nk];
-                sw.Start();
-
-                //for (int i = 0; i < so_user; i++)
-                //{
-                //    for (int j = 0; j < nk; j++)
-                //    {
-                //        BigInteger secret = RSECC.Utils.Integer.randomBetween(1, _curve.order - 1);
-                //        Point pub = EcdsaMath.Multiply(_curve.G, secret, _curve.order, _curve.A, _curve.P);
-                //        //sb.AppendLine(string.Format("{0},{1},{2}", i, j, secret));
-                //        //sb1.AppendLine(string.Format("{0},{1},{2},{3}", i, j, pub.x, pub.y));
-                //        WriteFile(_file_private_key, string.Format("{0},{1},{2}", i, j, secret));
-                //        WriteFile(_file_public_key, string.Format("{0},{1},{2},{3}", i, j, pub.x, pub.y));
-                //    }
-                //}
-                List<string> private_keys = new List<string>();
-                List<string> public_keys = new List<string>();
-                Parallel.For(0, so_user, i =>
+                #region Pha 1
+                if (_run_phase_1)
                 {
-                    Parallel.For(0, nk, j =>
+                    UpdateState?.Invoke(null, new LogEventArgs { message = "Phase 1 started at " + DateTime.Now.ToLongTimeString() });
+
+                    sw.Start();
+                    Parallel.For(0, so_user, i =>
                     {
-                        BigInteger secret = RSECC.Utils.Integer.randomBetween(1, _curve.order - 1);
-                        Point pub = EcdsaMath.Multiply(_curve.G, secret, _curve.order, _curve.A, _curve.P);
-                        ksuij[i, j] = secret;
-                        KPUij[i, j] = pub;
-                        ///private_keys.Add(string.Format("{0},{1},{2}", i, j, secret));
-                        //public_keys.Add(string.Format("{0},{1},{2},{3}", i, j, pub.x, pub.y));
+                        Parallel.For(0, nk, j =>
+                        {
+                            BigInteger secret = RSECC.Utils.Integer.randomBetween(1, _curve.order - 1);
+                            Point pub = EcdsaMath.Multiply(_curve.G, secret, _curve.order, _curve.A, _curve.P);
+                            concurrent_1.Add(string.Format("{0},{1},{2}", i, j, secret));
+                            concurrent_2.Add(string.Format("{0},{1},{2},{3}", i, j, pub.x, pub.y));
+                        });
                     });
-                });
-                sw.Stop();
-                //WriteFile(_file_private_key, string.Join("\r\n", private_keys), false);
-                //WriteFile(_file_public_key, string.Join("\r\n", public_keys), false);
-                LogInfo log_pharse_1 = new LogInfo()
-                {
-                    thoi_gian = sw.ElapsedMilliseconds,
-                    pharse = ECCPhase.PHASE_1,
-                    so_phim = so_phim,
-                    so_user = so_user,
-                    type = TypeSolution.ELLIPTIC,
-                    thuoc_tinh = new List<int> { _curve_property },
-                };
-                log_pharse_1.SetMetadata();
-                success = LoggerRepository.Instance.Index(log_pharse_1);
+                    sw.Stop();
+                    UpdateState?.Invoke(null, new LogEventArgs { message = string.Format("Phase 1 completed in {0} miliseconds.", sw.ElapsedMilliseconds) });
+                    LogInfo log_pharse_1 = new LogInfo()
+                    {
+                        thoi_gian = sw.ElapsedMilliseconds,
+                        pharse = ECCPhase.PHASE_1,
+                        so_phim = so_phim,
+                        so_user = so_user,
+                        type = TypeSolution.ELLIPTIC,
+                        thuoc_tinh = new List<int> { _curve_property },
+                    };
+                    log_pharse_1.SetMetadata();
+                    success = LoggerRepository.Instance.Index(log_pharse_1);
 
 
-                //WriteFile(_file_private_key, sb.ToString(), false);
-                //WriteFile(_file_public_key, sb1.ToString(), false);
-                sb.Clear();
-                sb1.Clear();
-                UpdateState?.Invoke(null, new LogEventArgs { message = string.Format("Phase 1 completed in {0} miliseconds.", sw.ElapsedMilliseconds) });
-                //return;
+                    WriteFile(_file_private_key, string.Join(Environment.NewLine, concurrent_1), false);
+                    WriteFile(_file_public_key, string.Join(Environment.NewLine, concurrent_2), false);
+                    GenericMethod.Clear(concurrent_1);
+                    GenericMethod.Clear(concurrent_2);
+                }
                 #endregion
 
                 #region Pha 2 Máy chủ thực hiện
-                UpdateState?.Invoke(null, new LogEventArgs { message = "Phase 2 started" });
-
-                //string[] PubK = ReadFileAsLine(_file_public_key);
-                //Parallel.ForEach(PubK, line =>
-                //{
-                //    if (!string.IsNullOrWhiteSpace(line))
-                //    {
-                //        string[] values = line.Split(',');
-                //        KPUij[int.Parse(values[0]), int.Parse(values[1])] = new Point(BigInteger.Parse(values[2]), BigInteger.Parse(values[3]));
-                //    }
-                //});
-
                 Point[] KPj = new Point[nk];
-                sw.Start();
-                Parallel.For(0, nk, j =>
+                if (_run_phase_2)
                 {
-                    KPj[j] = new Point(0, 0);
-                    ParallelLoopResult res = Parallel.For(0, so_user, i =>
-                     {
-                         KPj[j] = EcdsaMath.Add(KPj[j], KPUij[i, j], _curve.A, _curve.P);
-                     });
-                    //if (res.IsCompleted)
-                    //{
-                    //    sb.AppendLine(string.Format("{0},{1},{2}", j, KPj[j].x, KPj[j].y));
-                    //}
-                });
-                sw.Stop();
-                LogInfo log_pharse_2 = new LogInfo()
-                {
-                    thoi_gian = sw.ElapsedMilliseconds,
-                    pharse = ECCPhase.PHASE_2,
-                    so_phim = so_phim,
-                    so_user = so_user,
-                    type = TypeSolution.ELLIPTIC,
-                    thuoc_tinh = new List<int> { _curve_property },
-                };
-                log_pharse_2.SetMetadata();
-                success = LoggerRepository.Instance.Index(log_pharse_2);
+                    UpdateState?.Invoke(null, new LogEventArgs { message = "Phase 2 started at " + DateTime.Now.ToLongTimeString() });
 
-
-               /// WriteFile(_file_share_key, sb.ToString(), false);
-                sb.Clear();
-
-                UpdateState?.Invoke(null, new LogEventArgs { message = string.Format("Phase 2 completed in {0} miliseconds.", sw.ElapsedMilliseconds) });
-                #endregion
-
-                #region Pha 3
-                UpdateState?.Invoke(null, new LogEventArgs { message = "Phase 3 started" });
-                //string[] shared_key = ReadFileAsLine(_file_share_key);
-
-                //Parallel.ForEach(shared_key, line =>
-                //{
-                //    if (!string.IsNullOrWhiteSpace(line))
-                //    {
-                //        string[] values = line.Split(',');
-                //        KPj[int.Parse(values[0])] = new Point(BigInteger.Parse(values[1]), BigInteger.Parse(values[2]));
-                //    }
-                //});
-
-                //string[] data_pha1 = ReadFileAsLine(_file_private_key);
-                //Parallel.ForEach(data_pha1, line =>
-                //{
-                //    if (!string.IsNullOrWhiteSpace(line))
-                //    {
-                //        string[] values = line.Split(',');
-                //        ksuij[int.Parse(values[0]), int.Parse(values[1])] = BigInteger.Parse(values[2]);
-                //    }
-                //});
-                ns = 10;
-                Point[,] AUij = new Point[so_user, ns];
-                sw.Start();
-                Parallel.For(0, so_user, i =>
-                {
-                    int j = 0;
-                    Parallel.For(0, nk, t =>
+                    string[] PubK = ReadFileAsLine(_file_public_key);
+                    Parallel.ForEach(PubK, line =>
                     {
-                        Parallel.For(t + 1, nk, (k, loopState) =>
-                        {
-                            Point p1 = EcdsaMath.Multiply(_curve.G, Rns[i, j], _curve.order, _curve.A, _curve.P);
-                            Point p2 = EcdsaMath.Multiply(KPj[t], ksuij[i, k], _curve.order, _curve.A, _curve.P);
-                            Point p3 = EcdsaMath.Multiply(KPj[k], ksuij[i, t], _curve.order, _curve.A, _curve.P);
-                            BigInteger tmp = BigInteger.Remainder(-p3.y, _curve.P);
-                            if (tmp < 0)
-                            {
-                                tmp += _curve.P;
-                            }
-                            Point invp3 = new Point(p3.x, tmp);
-                            AUij[i, j] = EcdsaMath.Add(EcdsaMath.Add(p1, p2, _curve.A, _curve.P), invp3, _curve.A, _curve.P);
-                            if (j == ns - 1) loopState.Stop();
-                            else j++;
-                        });
+                        string[] values = line.Split(',');
+                        KPUij[int.Parse(values[0]), int.Parse(values[1])] = new Point(BigInteger.Parse(values[2]), BigInteger.Parse(values[3]));
                     });
-                    sb.AppendLine(string.Format("{0},{1},{2},{3}", i, j, AUij[i, j].x, AUij[i, j].y));
-                });
-                sw.Stop();
-                LogInfo log_pharse_3 = new LogInfo()
-                {
-                    thoi_gian = sw.ElapsedMilliseconds,
-                    pharse = ECCPhase.PHASE_3,
-                    so_phim = so_phim,
-                    so_user = so_user,
-                    type = TypeSolution.ELLIPTIC,
-                    thuoc_tinh = new List<int> { _curve_property },
-                };
-                success = LoggerRepository.Instance.Index(log_pharse_3);
-                WriteFile(_file_c_to_server, sb.ToString(), false);
-                sb.Clear();
-                UpdateState?.Invoke(null, new LogEventArgs { message = string.Format("Phase 3 completed in {0} miliseconds.", sw.ElapsedMilliseconds) });
+
+
+                    sw.Reset();
+                    sw.Start();
+                    Parallel.For(0, nk, j =>
+                    {
+                        KPj[j] = new Point(0, 0);
+                        ParallelLoopResult res = Parallel.For(0, so_user, i =>
+                        {
+                            Point temp = KPj[j];
+                            KPj[j] = EcdsaMath.Add(temp, KPUij[i, j], _curve.A, _curve.P);
+                        });
+                        if (res.IsCompleted)
+                        {
+                            concurrent_1.Add(string.Format("{0},{1},{2}", j, KPj[j].x, KPj[j].y));
+                        }
+                    });
+                    sw.Stop();
+                    UpdateState?.Invoke(null, new LogEventArgs { message = string.Format("Phase 2 completed in {0} miliseconds.", sw.ElapsedMilliseconds) });
+                    LogInfo log_pharse_2 = new LogInfo()
+                    {
+                        thoi_gian = sw.ElapsedMilliseconds,
+                        pharse = ECCPhase.PHASE_2,
+                        so_phim = so_phim,
+                        so_user = so_user,
+                        type = TypeSolution.ELLIPTIC,
+                        thuoc_tinh = new List<int> { _curve_property },
+                    };
+                    log_pharse_2.SetMetadata();
+                    success = LoggerRepository.Instance.Index(log_pharse_2);
+
+                    WriteFile(_file_share_key, string.Join(Environment.NewLine, concurrent_1), false);
+                    GenericMethod.Clear(concurrent_1);
+                }
+
+
                 #endregion
 
-                #region Pha 4
-                //BigInteger[] A = new BigInteger[683];//[ns];
-                //int tg, tg1;
-                //for (int j = 1316; j < ns; j++)
-                //{
-                //    i = 1316;
-                //    m = 683;
-                //    j = 0;
-                //    BigInteger[,] AU = new BigInteger[n, m];
-                //    reader1 = new StreamReader(@"0. ECCPhase 3.txt");
-                //    while (!reader1.EndOfStream)
-                //    {
-                //        var line = reader1.ReadLine();
-                //        var values = line.Split(',');
-                //        tg = int.Parse(values[1]);
-                //        tg1 = int.Parse(values[0]);
-                //        if ((tg >= i) && (tg1 <= 49) && (tg <= 1999))
-                //        {
-                //            AU[tg1, j] = BigInteger.Parse(values[2]);
-                //            j++;
-                //            if (j == m)
-                //            {
-                //                j = 0;
-                //                if (tg1 == 49)
-                //                    break;
-                //            }
-                //        }
-                //    }
-                //    reader1.Close();
-                //}
-                //LogInfo log_pharse_4 = new LogInfo()
-                //{
-                //    thoi_gian = sw.ElapsedMilliseconds,
-                //    pharse = ECCPhase.PHARSE_4,
-                //    so_phim = so_phim,
-                //    so_user = so_user
-                //};
-                //LoggerRepository.Instance.Index(log_pharse_4);
+                #region Pha 3 Những người dùng Ui thực hiện
+                Point[,] AUij = new Point[so_user, ns];
+                if (_run_phase_3)
+                {
+                    //ns = 10;
+                    UpdateState?.Invoke(null, new LogEventArgs { message = "Phase 3 started at " + DateTime.Now.ToLongTimeString() });
+                    string[] shared_key = ReadFileAsLine(_file_share_key);
+
+                    Parallel.ForEach(shared_key, line =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            string[] values = line.Split(',');
+                            KPj[int.Parse(values[0])] = new Point(BigInteger.Parse(values[1]), BigInteger.Parse(values[2]));
+                        }
+                    });
+
+                    string[] data_pha1 = ReadFileAsLine(_file_private_key);
+                    Parallel.ForEach(data_pha1, line =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            string[] values = line.Split(',');
+                            ksuij[int.Parse(values[0]), int.Parse(values[1])] = BigInteger.Parse(values[2]);
+                        }
+                    });
+
+                    sw.Reset();
+                    sw.Start();
+                    Parallel.For(0, so_user, i =>
+                    {
+                        int j = 0;
+                        for (int t = 0; t < nk; t++)
+                        {
+                            for (int k = t + 1; k < nk; k++)
+                            {
+                                Point p1 = EcdsaMath.Multiply(_curve.G, Rns[i, j], _curve.order, _curve.A, _curve.P);
+                                Point p2 = EcdsaMath.Multiply(KPj[t], ksuij[i, k], _curve.order, _curve.A, _curve.P);
+                                Point p3 = EcdsaMath.Multiply(KPj[k], ksuij[i, t], _curve.order, _curve.A, _curve.P);
+                                BigInteger tmp = BigInteger.Remainder(-p3.y, _curve.P);
+                                if (tmp < 0)
+                                {
+                                    tmp += _curve.P;
+                                }
+                                Point invp3 = new Point(p3.x, tmp);
+                                AUij[i, j] = EcdsaMath.Add(EcdsaMath.Add(p1, p2, _curve.A, _curve.P), invp3, _curve.A, _curve.P);
+                                concurrent_1.Add(string.Format("{0},{1},{2},{3}", i, j, AUij[i, j].x, AUij[i, j].y));
+                                if (j == ns - 1) break;
+                                else j++;
+                            }
+                            if (j == ns - 1) break;
+                        }
+                    });
+                    sw.Stop();
+                    UpdateState?.Invoke(null, new LogEventArgs { message = string.Format("Phase 3 completed in {0} miliseconds.", sw.ElapsedMilliseconds) });
+                    LogInfo log_pharse_3 = new LogInfo()
+                    {
+                        thoi_gian = sw.ElapsedMilliseconds,
+                        pharse = ECCPhase.PHASE_3,
+                        so_phim = so_phim,
+                        so_user = so_user,
+                        type = TypeSolution.ELLIPTIC,
+                        thuoc_tinh = new List<int> { _curve_property },
+                    };
+                    log_pharse_3.SetMetadata();
+                    success = LoggerRepository.Instance.Index(log_pharse_3);
+                    WriteFile(_file_c_to_server, string.Join(Environment.NewLine, concurrent_1), false);
+                    GenericMethod.Clear(concurrent_1);
+                }
+
+
+                #endregion
+
+                #region Pha 4 Máy chủ thực hiện
+                if (_run_phase_4)
+                {
+                    sw.Reset();
+                    sw.Start();
+                    Point[] Aj = new Point[so_user * ns];
+                    string[] data_phase3 = ReadFileAsLine(_file_c_to_server);
+
+                    Parallel.ForEach(data_phase3, line =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            string[] values = line.Split(',');
+                            AUij[int.Parse(values[0]), int.Parse(values[1])] = new Point(BigInteger.Parse(values[2]), BigInteger.Parse(values[3]));
+                        }
+                    });
+
+                    Parallel.For(0, ns, (j, _) =>
+                    {
+                        Aj[j] = new Point(0, 0);
+                        ParallelLoopResult res = Parallel.For(0, so_user, (i) =>
+                        {
+                            Aj[j] = EcdsaMath.Add(Aj[j], AUij[i, j], _curve.A, _curve.P);
+                        });
+                        if (res.IsCompleted)
+                        {
+                            concurrent_1.Add(string.Format("{0},{1},{2}",j, Aj[j].x, Aj[j].y));
+                        }
+                    });
+                    sw.Stop();
+                    LogInfo log_pharse_4 = new LogInfo()
+                    {
+                        thoi_gian = sw.ElapsedMilliseconds,
+                        pharse = ECCPhase.PHASE_4,
+                        so_phim = so_phim,
+                        so_user = so_user
+                    };
+                    log_pharse_4.SetMetadata();
+                    success = LoggerRepository.Instance.Index(log_pharse_4);
+                    WriteFile(_file_c_to_client, string.Join(Environment.NewLine, concurrent_1), false);
+                    GenericMethod.Clear(concurrent_1);
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.StackTrace);
-                //Console.WriteLine(ex.Message);
             }
 
             #endregion
         }
 
+
+        public static int[] BRF(BigInteger[] xSj, BigInteger g, BigInteger p, int ns, int max)
+        {
+            int[] result = new int[ns];
+            BigInteger tg = 1;
+            int j = 0, i = 0, k;
+            for (i = 0; i < max; i++)
+            {
+                for (k = 0; k < ns; k++)
+                {
+                    if (tg == xSj[k])
+                    {
+                        result[k] = i;
+                        j++;
+                        if (j == ns) break;
+                    }
+                }
+                tg = tg * g % p;
+            }
+            return result;
+        }//Dung
     }
 
 

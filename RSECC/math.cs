@@ -32,7 +32,7 @@ namespace RSECC
             //:param A: Coefficient of the first-order term of the equation Y ^ 2 = X ^ 3 + A * X + B(mod p)
             //:return: Point that represents the sum of First and Second Point
 
-            return fromJacobian(jacobianAdd(toJacobian(p), toJacobian(q), A, P), P);
+            return jacobianAdd(toJacobian(p), toJacobian(q), A, P);
         }
 
         public static BigInteger Inv(BigInteger x, BigInteger n)

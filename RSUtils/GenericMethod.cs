@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -25,5 +26,13 @@ namespace RSUtils
         }
 
         public static string GetDisplayName(this Enum e) => ((IEnumerable<MemberInfo>)e.GetType().GetMember(e.ToString())).First<MemberInfo>().GetCustomAttribute<DisplayAttribute>().GetName();
+
+        public static void Clear<T>(this ConcurrentBag<T> concurrentBag) 
+        {
+            while (!concurrentBag.IsEmpty)
+            {
+                concurrentBag.TryTake(out _);
+            }
+        }
     }
 }

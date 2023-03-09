@@ -39,6 +39,7 @@ namespace RSService
             _worker = new BackgroundWorker()
             {
                 WorkerReportsProgress = true,
+                WorkerSupportsCancellation = true
             };
             _worker.DoWork += _worker_DoWork;
             _worker.RunWorkerCompleted += _worker_RunWorkerCompleted;
@@ -57,20 +58,19 @@ namespace RSService
 
         private void _worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            if (_test_number > 0)
-            {
-                //_worker.RunWorkerAsync();
-                _test_number -= 1;
-            }
-            _worker.Dispose();
+            
         }
 
         private void _worker_DoWork(object sender, DoWorkEventArgs e)
         {
-            _worker.ReportProgress(0, "Bắt đầu xử lí");
-            Elliptic.UpdateState += UpdateStatus;
-            Elliptic.Run();
-            _worker.ReportProgress(0, "Xử lí xong");
+            BackgroundWorker worker = sender as BackgroundWorker;
+            if (worker.CancellationPending != true)
+            {
+                worker.ReportProgress(0, "Bắt đầu xử lí");
+                Elliptic.UpdateState += UpdateStatus;
+                Elliptic.Run();
+                worker.ReportProgress(0, "Xử lí xong");
+            }
         }
 
         private void UpdateStatus(object sender, LogEventArgs e)
@@ -91,6 +91,7 @@ namespace RSService
             _worker.RunWorkerAsync();
             //_timer.Start();
         }
+
 
 
         private void setLabel(Control ctl, string text, bool is_append = true)

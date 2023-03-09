@@ -151,6 +151,10 @@
       <Project>{415D33E2-614F-40A5-BD51-967424BB9876}</Project>
       <Name>RSModels</Name>
     </ProjectReference>
+    <ProjectReference Include="..\RSUtils\RSUtils.csproj">
+      <Project>{482edec6-d34b-403c-bbc9-ac7900b77519}</Project>
+      <Name>RSUtils</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
