@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Security.Cryptography;
 
 
 namespace RSECC
@@ -34,6 +35,18 @@ namespace RSECC
 
             return jacobianAdd(toJacobian(p), toJacobian(q), A, P);
         }
+
+        public static Point Sub(Point p, Point q, BigInteger A, BigInteger P)
+        {
+            BigInteger tmp = BigInteger.Remainder(P-q.y, P);
+            if (tmp < 0)
+            {
+                tmp += P;
+            }
+            Point intQ = new Point(q.x, tmp, 1);
+            return jacobianAdd(toJacobian(p), toJacobian(intQ), A, P);
+        }
+
 
         public static BigInteger Inv(BigInteger x, BigInteger n)
         {

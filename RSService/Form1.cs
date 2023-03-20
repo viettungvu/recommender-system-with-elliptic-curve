@@ -35,7 +35,16 @@ namespace RSService
 
         private void _init()
         {
+            initWorker();
+            _timer = new System.Timers.Timer();
+            double.TryParse(System.Configuration.ConfigurationManager.AppSettings["TimeElapseService"], out _time_overlapse);
+            _timer.Interval = (int)_time_overlapse * 3600;
+            _timer.AutoReset = true;
+            _timer.Elapsed += _timer_Elapsed;
+        }
 
+        private void initWorker()
+        {
             _worker = new BackgroundWorker()
             {
                 WorkerReportsProgress = true,
@@ -44,11 +53,6 @@ namespace RSService
             _worker.DoWork += _worker_DoWork;
             _worker.RunWorkerCompleted += _worker_RunWorkerCompleted;
             _worker.ProgressChanged += _worker_ProgressChanged;
-            _timer = new System.Timers.Timer();
-            double.TryParse(System.Configuration.ConfigurationManager.AppSettings["TimeElapseService"], out _time_overlapse);
-            _timer.Interval = (int)_time_overlapse * 3600;
-            _timer.AutoReset = true;
-            _timer.Elapsed += _timer_Elapsed;
         }
 
         private void _worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -58,7 +62,8 @@ namespace RSService
 
         private void _worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            
+            BackgroundWorker worker = sender as BackgroundWorker;
+            worker.Dispose();
         }
 
         private void _worker_DoWork(object sender, DoWorkEventArgs e)
@@ -69,6 +74,7 @@ namespace RSService
                 worker.ReportProgress(0, "Bắt đầu xử lí");
                 Elliptic.UpdateState += UpdateStatus;
                 Elliptic.Run();
+                //Elliptic.RunWithoutStopWatch();
                 worker.ReportProgress(0, "Xử lí xong");
             }
         }
@@ -88,6 +94,7 @@ namespace RSService
 
         private void button1_Click(object sender, EventArgs e)
         {
+            initWorker();
             _worker.RunWorkerAsync();
             //_timer.Start();
         }

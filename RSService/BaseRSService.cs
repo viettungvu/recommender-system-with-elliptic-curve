@@ -10,15 +10,20 @@ namespace RSService
 {
     public class BaseRSService
     {
-        protected static string _data_folder = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName, "data");
+        protected static string _data_folder0 = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName, "data");
+        protected static string _data_folder = "C:\\Data\\New";
         protected static void WriteFile(string file_name, string content, bool append = true)
         {
             if (!string.IsNullOrWhiteSpace(file_name))
             {
+                if (!Directory.Exists(_data_folder))
+                {
+                    Directory.CreateDirectory(_data_folder);
+                }
                 string full_path = Path.Combine(_data_folder, file_name);
                 if (append)
                 {
-                    File.AppendAllText(full_path, content);
+                    File.AppendAllText(full_path, content+"\n");
                 }
                 else
                 {
