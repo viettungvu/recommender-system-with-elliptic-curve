@@ -11,7 +11,7 @@ namespace RSService
     public class BaseRSService
     {
         protected static string _data_folder0 = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName, "data");
-        protected static string _data_folder = "C:\\Data\\New";
+        protected static string _data_folder = "C:\\Data\\New1";
         protected static void WriteFile(string file_name, string content, bool append = true)
         {
             if (!string.IsNullOrWhiteSpace(file_name))

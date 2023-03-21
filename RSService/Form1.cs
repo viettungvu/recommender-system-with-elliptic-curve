@@ -73,8 +73,8 @@ namespace RSService
             {
                 worker.ReportProgress(0, "Bắt đầu xử lí");
                 Elliptic.UpdateState += UpdateStatus;
-                Elliptic.Run();
-                //Elliptic.RunWithoutStopWatch();
+                //Elliptic.Run();
+                Elliptic.RunWithoutStopWatch();
                 worker.ReportProgress(0, "Xử lí xong");
             }
         }

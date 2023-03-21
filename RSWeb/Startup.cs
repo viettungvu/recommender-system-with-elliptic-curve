@@ -28,32 +28,13 @@ namespace RSWeb
         {
             services.AddControllersWithViews();
 
-            services.AddLocalization(option => option.ResourcesPath = "Resources");
-            services.AddMvc()
-            .AddViewLocalization();
-                //.AddDataAnnotationsLocalization(options => options.DataAnnotationLocalizerProvider = (type, factory) =>
-                //{
-                //    var assemblyName = new AssemblyName(typeof(SharedResource).GetTypeInfo().Assembly.FullName);
-                //    return factory.Create("SharedResource", assemblyName.Name);
-                //});
-            services.Configure<RequestLocalizationOptions>(options =>
-            {
-                var cultures = new List<CultureInfo>
-                {
-                    new CultureInfo("vi"),
-                    new CultureInfo("en"),
-                    new CultureInfo("fr"),
-                };
-                options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("vi");
-                options.SupportedCultures = cultures;
-                options.SupportedUICultures = cultures;
-            });
+          
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseRequestLocalization(app.ApplicationServices.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value);
+          
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();

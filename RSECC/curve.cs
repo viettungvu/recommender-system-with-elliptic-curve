@@ -73,21 +73,21 @@ namespace RSECC
             Utils.BinaryAscii.numberFromHex("1C97BEFC54BD7A8B65ACF89F81D4D4ADC565FA45"),
             Utils.BinaryAscii.numberFromHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7FFFFFFF"),
             Utils.BinaryAscii.numberFromHex("0100000000000000000001F4C8F927AED3CA752257"),
-            Utils.BinaryAscii.numberFromHex("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"),
-            Utils.BinaryAscii.numberFromHex("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"),
+            Utils.BinaryAscii.numberFromHex("4A96B5688EF573284664698968C38BB913CBFC82"),
+            Utils.BinaryAscii.numberFromHex("23A628553168947D59DCC912042351377AC5FB32"),
             CurveType.sec160r1,
-            new int[] { 1, 3, 132, 0, 10 }
+            new int[] { 1, 3, 132, 0, 8 }
         );
 
         public static CurveFp sec160k1 = new CurveFp(
-           Utils.BinaryAscii.numberFromHex("00000000000000000000000000000000"),
-           Utils.BinaryAscii.numberFromHex("00000000000000000000000000000000"),
+           Utils.BinaryAscii.numberFromHex("0000000000000000000000000000000000000000"),
+           Utils.BinaryAscii.numberFromHex("0000000000000000000000000000000000000007"),
            Utils.BinaryAscii.numberFromHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFAC73"),
-           Utils.BinaryAscii.numberFromHex("0100000000000000000001B8FA16DFAB9A"),
+           Utils.BinaryAscii.numberFromHex("0100000000000000000001B8FA16DFAB9ACA16B6B3"),
            Utils.BinaryAscii.numberFromHex("3B4C382CE37AA192A4019E763036F4F5DD4D7EBB"),
            Utils.BinaryAscii.numberFromHex("938CF935318FDCED6BC28286531733C3F03C4FEE"),
            CurveType.sec160k1,
-           new int[] { 1, 3, 132, 0, 10 }
+           new int[] { 1, 3, 132, 0, 9 }
         );
 
 
